@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <title>Cubo 3x3x3 3D - Cubo Mágico Interativo</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #111; }
+        canvas { display: block; }
+        #info {
+            position: absolute; top: 10px; left: 10px; color: white; font-family: Arial, sans-serif;
+            background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+<div id="info">
+    <strong>Cubo 3x3x3 3D</strong><br>
+    Clique e arraste para girar<br>
+    Roda do mouse = zoom
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+<script>
+// ==================== CONFIGURAÇÃO ====================
+let scene, camera, renderer;
+let cubeGroup;
+let isDragging = false;
+let prevMouseX = 0, prevMouseY = 0;
+
+function init() {
+    scene = new THREE.Scene();
+    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    // Luzes
+    scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    dirLight.position.set(10, 10, 10);
+    scene.add(dirLight);
+
+    // Grupo do cubo
+    cubeGroup = new THREE.Group();
+    scene.add(cubeGroup);
+
+    const size = 0.95;      // tamanho de cada cubinho
+    const spacing = 1.05;   // espaço entre eles
+
+    for (let x = -1; x <= 1; x++) {
+        for (let y = -1; y <= 1; y++) {
+            for (let z = -1; z <= 1; z++) {
+                // pula o cubo central (não aparece no cubo mágico)
+                if (x === 0 && y === 0 && z === 0) continue;
+
+                const geometry = new THREE.BoxGeometry(size, size, size);
+
+                const materials = [
+                    new THREE.MeshPhongMaterial({ color: (x === 1)  ? 0xff0000 : 0x222222 }), // direita (vermelho)
+                    new THREE.MeshPhongMaterial({ color: (x === -1) ? 0xff8800 : 0x222222 }), // esquerda (laranja)
+                    new THREE.MeshPhongMaterial({ color: (y === 1)  ? 0xffffff : 0x222222 }), // cima (branco)
+                    new THREE.MeshPhongMaterial({ color: (y === -1) ? 0xffdd00 : 0x222222 }), // baixo (amarelo)
+                    new THREE.MeshPhongMaterial({ color: (z === 1)  ? 0x00ff00 : 0x222222 }), // frente (verde)
+                    new THREE.MeshPhongMaterial({ color: (z === -1) ? 0x0000ff : 0x222222 })  // trás (azul)
+                ];
+
+                const cube = new THREE.Mesh(geometry, materials);
+                cube.position.set(x * spacing, y * spacing, z * spacing);
+                cubeGroup.add(cube);
+            }
+        }
+    }
+
+    camera.position.set(0, 0, 5.5);
+    cubeGroup.rotation.set(0.3, 0.5, 0); // ângulo inicial bonito
+
+    // Eventos do mouse
+    renderer.domElement.addEventListener('mousedown', onMouseDown);
+    renderer.domElement.addEventListener('mouseup', onMouseUp);
+    renderer.domElement.addEventListener('mousemove', onMouseMove);
+    renderer.domElement.addEventListener('wheel', onWheel);
+
+    window.addEventListener('resize', onResize);
+}
+
+function onMouseDown(e) {
+    isDragging = true;
+    prevMouseX = e.clientX;
+    prevMouseY = e.clientY;
+}
+
+function onMouseUp() {
+    isDragging = false;
+}
+
+function onMouseMove(e) {
+    if (!isDragging) return;
+    const deltaX = e.clientX - prevMouseX;
+    const deltaY = e.clientY - prevMouseY;
+
+    cubeGroup.rotation.y += deltaX * 0.005;
+    cubeGroup.rotation.x += deltaY * 0.005;
+
+    prevMouseX = e.clientX;
+    prevMouseY = e.clientY;
+}
+
+function onWheel(e) {
+    camera.position.z += e.deltaY * 0.03;
+    if (camera.position.z < 3) camera.position.z = 3;
+    if (camera.position.z > 9) camera.position.z = 9;
+}
+
+function onResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+function animate() {
+    requestAnimationFrame(animate);
+    renderer.render(scene, camera);
+}
+
+init();
+animate();
+</script>
+</body>
+</html>
